@@ -12,7 +12,7 @@ import type {
   unstable_DataStrategyFunction,
   Fetcher,
   FormEncType,
-  FutureConfig as RouterFutureConfig,
+  FutureConfig,
   GetScrollRestorationKeyFunction,
   HashHistory,
   History,
@@ -124,7 +124,7 @@ try {
 
 interface DOMRouterOpts {
   basename?: string;
-  future?: Partial<RouterFutureConfig>;
+  future?: Partial<FutureConfig>;
   hydrationData?: HydrationState;
   unstable_dataStrategy?: unstable_DataStrategyFunction;
   unstable_patchRoutesOnMiss?: unstable_PatchRoutesOnMissFunction;
