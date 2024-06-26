@@ -3247,7 +3247,8 @@ export function createRouter(init: RouterInit): Router {
           patchRoutesOnMissImpl!,
           pathname,
           partialMatches,
-          dataRoutes || inFlightDataRoutes,
+          // TODO: Handle HMR
+          dataRoutes,
           manifest,
           mapRouteProperties,
           pendingPatchRoutes,
@@ -3255,14 +3256,20 @@ export function createRouter(init: RouterInit): Router {
         );
       } catch (e) {
         return { type: "error", error: e, partialMatches };
+      } finally {
+        // Create a new reference to trigger anything with router.routes in the
+        // dependency array.  Don't need to `updateState` though since that will
+        // happen after this navigation/fetch anyway
+        // TODO: Handle HMR
+        dataRoutes = [...dataRoutes];
       }
 
       if (signal.aborted) {
         return { type: "aborted" };
       }
 
-      let routesToUse = inFlightDataRoutes || dataRoutes;
-      let newMatches = matchRoutes(routesToUse, pathname, basename);
+      // TODO: Handle HMR
+      let newMatches = matchRoutes(dataRoutes, pathname, basename);
       let matchedSplat = false;
       if (newMatches) {
         let leafRoute = newMatches[newMatches.length - 1].route;
@@ -3286,7 +3293,8 @@ export function createRouter(init: RouterInit): Router {
       }
 
       let newPartialMatches = matchRoutesImpl<AgnosticDataRouteObject>(
-        routesToUse,
+        // TODO: Handle HMR
+        dataRoutes,
         pathname,
         basename,
         true
@@ -3354,13 +3362,18 @@ export function createRouter(init: RouterInit): Router {
     getBlocker,
     deleteBlocker,
     patchRoutes(routeId, children) {
-      return patchRoutes(
+      patchRoutes(
         routeId,
         children,
-        dataRoutes || inFlightDataRoutes,
+        // TODO: Handle HMR
+        dataRoutes,
         manifest,
         mapRouteProperties
       );
+      // Update the routes identity and trigger a <RouterProvider> reflow since
+      // `router.routes` has been updated
+      dataRoutes = [...dataRoutes];
+      updateState({});
     },
     _internalFetchControllers: fetchControllers,
     _internalActiveDeferreds: activeDeferreds,
@@ -4513,7 +4526,7 @@ function shouldRevalidateLoader(
 }
 
 /**
- * Idempotent utility to execute route.children() method to lazily load route
+ * Idempotent utility to execute patchRoutesOnMiss() to lazily load route
  * definitions and update the routes/routeManifest
  */
 async function loadLazyRouteChildren(
